@@ -16,7 +16,10 @@ object MagicParser extends App {
           case None =>
             (Nil, CellIncomplete(head, 0, ""))
           case Some(CarryOver(cells, event)) =>
-            (cells, Quoted(head, 0, s"${event.content}\n", -1))
+            (cells, Quoted(input = head,
+              position = 0,
+              content = s"${event.content}\n",
+              quotePosition = -1))
         }
 
         val (parsedRow, newCarry) = RowScanner.scanRow(initialCells, initialScannerEvent)
