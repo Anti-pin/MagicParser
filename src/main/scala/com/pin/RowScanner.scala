@@ -1,5 +1,9 @@
 package com.pin
 
+object implicits {
+  implicit val delimiters: Delimiters = new Delimiters {}
+}
+
 trait ParserEvent {
   val input: String
   val position: Int
@@ -15,18 +19,21 @@ case class QuotedIncomplete(input: String, position: Int, content: String, quote
 
 case class RowComplete(input: String, position: Int) extends ParserEvent
 
+trait Delimiters {
+  val quote = '"'
+  val comma = ','
+}
+
 object RowScanner {
-  private val quote = '"'
-  private val comma = ','
 
 
   def startLine(input: String): ParserEvent = CellIncomplete(input, 0, "")
 
-  def scan(state: ParserEvent): ParserEvent = {
+  def scan(state: ParserEvent)(implicit delimiters: Delimiters): ParserEvent = {
     state match {
       case CellIncomplete(input, pos, content) =>
 
-        val newPos = input.indexWhere(c => c == quote || c == comma, pos)
+        val newPos = input.indexWhere(c => c == delimiters.quote || c == delimiters.comma, pos)
 
         if (newPos == -1) {
           // end of line
@@ -36,20 +43,20 @@ object RowScanner {
           val delimiter = input(newPos)
 
           delimiter match {
-            case RowScanner.quote =>
+            case delimiters.quote =>
               if (newPos != pos) {
                 val newContent = input.substring(pos, newPos)
                 CellIncomplete(input, newPos, content ++ newContent)
               } else
                 Quoted(input, pos, content, newPos)
-            case RowScanner.comma =>
+            case delimiters.comma =>
               val newContent = input.substring(pos, newPos)
               CellParced(input, newPos + 1, content ++ newContent)
           }
         }
 
       case Quoted(input, pos, content, quotePosition) =>
-        val closingQuotePos = input.indexOf(quote, quotePosition + 1)
+        val closingQuotePos = input.indexOf(delimiters.quote, quotePosition + 1)
         if (closingQuotePos == -1) {
           QuotedIncomplete(input, pos, content + input.substring(quotePosition), quotePosition)
         } else {
@@ -66,7 +73,8 @@ object RowScanner {
 
 
   @scala.annotation.tailrec
-  def scanRow(parsed: List[String], event: ParserEvent): (List[String], Option[QuotedIncomplete]) = {
+  def scanRow(parsed: List[String], event: ParserEvent)
+             (implicit delimiters: Delimiters): (List[String], Option[QuotedIncomplete]) = {
     scan(event) match {
       case e@CellParced(_, _, content) =>
         scanRow(content :: parsed, e)

@@ -4,7 +4,8 @@ object MagicParser extends App {
 
   case class CarryOver(parsed: List[String], quoted: QuotedIncomplete)
 
-  def parsed(input: Stream[String], carryOver: Option[CarryOver] = None): Stream[Seq[String]] = {
+  def parsed(input: Stream[String], carryOver: Option[CarryOver] = None)
+            (implicit delimiters: Delimiters): Stream[Seq[String]] = {
 
     input match {
       case Stream.Empty =>

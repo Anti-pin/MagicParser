@@ -1,6 +1,7 @@
 package com.pin
 
 import org.scalatest.{Matchers, WordSpec}
+import implicits.delimiters
 
 class RowScannerSpec extends WordSpec with Matchers {
 
@@ -96,6 +97,17 @@ class RowScannerSpec extends WordSpec with Matchers {
       val (scannedRow, carryOver) = RowScanner.scanRow(Nil, RowScanner.startLine(input))
       scannedRow shouldBe """ "abc" "def" """ :: "" :: "a" :: Nil
       carryOver shouldBe Some(QuotedIncomplete(input, 17, "\"e,g,h", 17))
+    }
+
+    "scan with alternative delimiters" in {
+      val input = "'ccc:ddd' : 'eee',fff "
+      val altDelimiters = new Delimiters {
+        override val quote = '''
+        override val comma = ':'
+      }
+
+      val (scannedRow, _) = RowScanner.scanRow(Nil, RowScanner.startLine(input))(altDelimiters)
+      scannedRow.reverse shouldBe List("'ccc:ddd' ", " 'eee',fff ")
     }
   }
 }

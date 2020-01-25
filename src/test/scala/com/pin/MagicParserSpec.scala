@@ -1,11 +1,13 @@
 package com.pin
 
 import org.scalatest.{Matchers, WordSpec}
+import implicits.delimiters
 
 class MagicParserSpec extends WordSpec with Matchers {
 
   "Magic parser" should {
     "parse simple row stream" in {
+
       val inputStream: Stream[String] =
         "aaa, bbb" #::
           """ccc, ddd, "eee, fff" """ #::
