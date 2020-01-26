@@ -1,5 +1,6 @@
 package com.pin
 
+import scala.collection.immutable.Stream.Empty
 import scala.io.{BufferedSource, Source}
 
 object MagicParser {
@@ -43,18 +44,20 @@ object MagicParser {
 
     val parsedStream = parse(input)
 
-    val header: Seq[String] = parsedStream.head
-
-    parsedStream.tail.map {
-      row: Seq[String] =>
-        val lengthD = header.length - row.length
-        val lengthAdjusted = if (lengthD > 0)
-          row ++ Seq.fill(lengthD)("")
-        else
-          row
-        header.zip(lengthAdjusted)
+    parsedStream match {
+      case Empty => Empty
+      case _ #:: Empty => Empty
+      case header #:: tail =>
+        tail.map {
+          row: Seq[String] =>
+            val lengthD = header.length - row.length
+            val lengthAdjusted = if (lengthD > 0)
+              row ++ Seq.fill(lengthD)("")
+            else
+              row
+            header.zip(lengthAdjusted)
+        }
     }
-
   }
 }
 
