@@ -9,13 +9,17 @@ trait ParserEvent {
   val position: Int
 }
 
-case class CellParced(input: String, position: Int, content: String) extends ParserEvent
+trait WithContent extends ParserEvent {
+  val content: String
+}
 
-case class CellIncomplete(input: String, position: Int, content: String) extends ParserEvent
+case class CellParced(input: String, position: Int, content: String) extends ParserEvent with WithContent
 
-case class Quoted(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent
+case class CellIncomplete(input: String, position: Int, content: String) extends ParserEvent with WithContent
 
-case class QuotedIncomplete(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent
+case class Quoted(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent with WithContent
+
+case class QuotedIncomplete(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent with WithContent
 
 case class RowComplete(input: String, position: Int) extends ParserEvent
 

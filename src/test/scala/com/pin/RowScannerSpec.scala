@@ -1,47 +1,72 @@
 package com.pin
 
-import org.scalatest.{Matchers, WordSpec}
-import implicits.delimiters
+import com.pin.implicits.delimiters
+import org.scalatest.{Assertion, Matchers, Succeeded, WordSpec}
+
+import scala.reflect.ClassTag
+
 
 class RowScannerSpec extends WordSpec with Matchers {
 
-  def assertEvent(expectation: ParserEvent): State[ParserEvent, Unit] = State { cs: ParserEvent =>
+  abstract class ParseEventMatcher[-T  <: ParserEvent: ClassTag] {
+
+    def shouldMatch(pe: ParserEvent, expectations: Any*): Assertion = {
+      pe shouldBe a[T]
+      check(pe.asInstanceOf[T], expectations:_*)
+    }
+
+    def check(pe: T, expectations: Any*): Assertion
+  }
+
+  object ParseEventMatchers {
+    implicit val runRowCompleteMatcher: ParseEventMatcher[RowComplete] = new ParseEventMatcher[RowComplete] {
+      override def check(pe: RowComplete, expectations: Any*): Assertion = Succeeded
+    }
+    implicit val runWithContentMatcher: ParseEventMatcher[WithContent] = new ParseEventMatcher[WithContent] {
+      override def check(pe: WithContent, expectations: Any*): Assertion = {
+        pe.content shouldBe expectations.head
+      }
+    }
+  }
+
+  def checkEvent[T <: ParserEvent](expectations: Any*)(implicit matcher: ParseEventMatcher[T]): State[ParserEvent, Unit] = State { cs: ParserEvent =>
     val newCs = RowScanner.scan(cs)
-    newCs shouldBe expectation
+    matcher.shouldMatch(newCs, expectations :_*)
     (newCs, Unit)
   }
 
   "Scanner" should {
+    import ParseEventMatchers._
+
     "recognize unquoted cell" in {
       val input = " abc, def"
 
       val test: State[ParserEvent, Unit] = for {
-        _ <- assertEvent(CellParced(input, 5, " abc"))
-        _ <- assertEvent(CellIncomplete(input, 5, ""))
-        _ <- assertEvent(CellParced(input, 10, " def"))
-        _ <- assertEvent(RowComplete(input, 10))
+        _ <- checkEvent[CellParced](" abc")
+        _ <- checkEvent[CellIncomplete]("")
+        _ <- checkEvent[CellParced](" def")
+        _ <- checkEvent[RowComplete]()
       } yield ()
 
       test.run(RowScanner.startLine(input))
-
     }
 
     "recognize quotation" in {
       val input = """ "abc" "def" ,"e,g,h" """
 
       val test = for {
-        _ <- assertEvent(CellIncomplete(input, position = 1, " "))
-        _ <- assertEvent(Quoted(input, position = 1, " ", quotePosition = 1))
-        _ <- assertEvent(CellIncomplete(input, position = 6, """ "abc""""))
-        _ <- assertEvent(CellIncomplete(input, position = 7, """ "abc" """))
-        _ <- assertEvent(Quoted(input, position = 7, """ "abc" """, quotePosition = 7))
-        _ <- assertEvent(CellIncomplete(input, position = 12, """ "abc" "def""""))
-        _ <- assertEvent(CellParced(input, position = 14, """ "abc" "def" """))
-        _ <- assertEvent(CellIncomplete(input, position = 14, ""))
-        _ <- assertEvent(Quoted(input, position = 14, "", quotePosition = 14))
-        _ <- assertEvent(CellIncomplete(input, position = 21, """"e,g,h""""))
-        _ <- assertEvent(CellParced(input, position = 23, """"e,g,h" """))
-        _ <- assertEvent(RowComplete(input, 23))
+        _ <- checkEvent[CellIncomplete](" ")
+        _ <- checkEvent[Quoted](" ")
+        _ <- checkEvent[CellIncomplete](""" "abc"""")
+        _ <- checkEvent[CellIncomplete](""" "abc" """)
+        _ <- checkEvent[Quoted](""" "abc" """)
+        _ <- checkEvent[CellIncomplete](""" "abc" "def"""")
+        _ <- checkEvent[CellParced](""" "abc" "def" """)
+        _ <- checkEvent[CellIncomplete]("")
+        _ <- checkEvent[Quoted]("")
+        _ <- checkEvent[CellIncomplete](""""e,g,h"""")
+        _ <- checkEvent[CellParced](""""e,g,h" """)
+        _ <- checkEvent[RowComplete]()
       } yield ()
 
       test.run(RowScanner.startLine(input))
@@ -51,11 +76,11 @@ class RowScannerSpec extends WordSpec with Matchers {
       val input = """ abc "def" """
 
       val test = for {
-        _ <- assertEvent(CellIncomplete(input, 5, " abc "))
-        _ <- assertEvent(Quoted(input, position = 5, " abc ", quotePosition = 5))
-        _ <- assertEvent(CellIncomplete(input, 10, """ abc "def""""))
-        _ <- assertEvent(CellParced(input, 12, """ abc "def" """))
-        _ <- assertEvent(RowComplete(input, 12))
+        _ <- checkEvent[CellIncomplete](" abc ")
+        _ <- checkEvent[Quoted](" abc ")
+        _ <- checkEvent[CellIncomplete](""" abc "def"""")
+        _ <- checkEvent[CellParced](""" abc "def" """)
+        _ <- checkEvent[RowComplete]()
       } yield ()
 
       test.run(RowScanner.startLine(input))
@@ -65,8 +90,8 @@ class RowScannerSpec extends WordSpec with Matchers {
       val input = "\""
 
       val test = for {
-        _ <- assertEvent(Quoted(input, position = 0, "", quotePosition = 0))
-        _ <- assertEvent(QuotedIncomplete(input, 0, "\"", 0))
+        _ <- checkEvent[Quoted]("")
+        _ <- checkEvent[QuotedIncomplete]("\"")
       } yield ()
 
       test.run(RowScanner.startLine(input))
@@ -76,10 +101,10 @@ class RowScannerSpec extends WordSpec with Matchers {
       val input = ","
 
       val test = for {
-        _ <- assertEvent(CellParced(input, 1, ""))
-        _ <- assertEvent(CellIncomplete(input, 1, ""))
-        _ <- assertEvent(CellParced(input, 2, ""))
-        _ <- assertEvent(RowComplete(input, 2))
+        _ <- checkEvent[CellParced]("")
+        _ <- checkEvent[CellIncomplete]("")
+        _ <- checkEvent[CellParced]("")
+        _ <- checkEvent[RowComplete]()
       } yield ()
 
       test.run(RowScanner.startLine(input))
