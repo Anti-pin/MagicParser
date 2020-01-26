@@ -1,7 +1,7 @@
 package com.pin
 
 object implicits {
-  implicit val delimiters: Delimiters = new Delimiters {}
+  implicit val defaultDelimiters: Delimiters = new Delimiters {}
 }
 
 trait ParserEvent {

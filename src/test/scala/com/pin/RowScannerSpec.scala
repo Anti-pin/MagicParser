@@ -1,6 +1,6 @@
 package com.pin
 
-import com.pin.implicits.delimiters
+import com.pin.implicits.defaultDelimiters
 import org.scalatest.{Assertion, Matchers, Succeeded, WordSpec}
 
 import scala.reflect.ClassTag
