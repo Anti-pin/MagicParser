@@ -19,11 +19,11 @@ case class CellIncomplete(input: String, position: Int, content: String) extends
 
 case class Escaped(input: String, position: Int, content: String) extends ParserEvent with WithContent
 
-case class Quoted(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent with WithContent
+case class Quoted(input: String, position: Int, content: String) extends ParserEvent with WithContent
 
-case class QuotedEscaped(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent with WithContent
+case class QuotedEscaped(input: String, position: Int, content: String) extends ParserEvent with WithContent
 
-case class QuotedIncomplete(input: String, position: Int, content: String, quotePosition: Int) extends ParserEvent with WithContent
+case class QuotedIncomplete(input: String, position: Int, content: String) extends ParserEvent with WithContent
 
 case class RowComplete(input: String, position: Int) extends ParserEvent
 
@@ -56,7 +56,7 @@ object RowScanner {
                 val newContent = input.substring(pos, newPos)
                 CellIncomplete(input, newPos, content ++ newContent)
               } else
-                Quoted(input, pos, content, newPos)
+                Quoted(input, pos, content)
             case delimiters.cellSeparator =>
               val newContent = input.substring(pos, newPos)
               CellParced(input, newPos + 1, content ++ newContent)
@@ -76,11 +76,11 @@ object RowScanner {
         }
 
 
-      case Quoted(input, pos, content, quotePosition) =>
+      case Quoted(input, pos, content) =>
         val delimiterPosition = input.indexWhere(c => c == delimiters.quote || c == delimiters.escape, pos + 1)
 
         if (delimiterPosition == -1) {
-          QuotedIncomplete(input, pos, content + input.substring(quotePosition), quotePosition)
+          QuotedIncomplete(input, pos, content + input.substring(pos))
         } else {
           input(delimiterPosition) match {
             case delimiters.quote =>
@@ -88,14 +88,14 @@ object RowScanner {
               CellIncomplete(input, delimiterPosition + 1, content + input.substring(pos, delimiterPosition + 1))
             case delimiters.escape =>
               // content does not include escape symbol
-              QuotedEscaped(input, delimiterPosition + 1, content  + input.substring(pos, delimiterPosition), quotePosition)
+              QuotedEscaped(input, delimiterPosition + 1, content  + input.substring(pos, delimiterPosition))
           }
         }
 
-      case QuotedEscaped(input, pos, content, quotePosition) =>
+      case QuotedEscaped(input, pos, content) =>
         if (pos < input.length) {
           val newContent = input(pos)
-          Quoted(input, pos + 1, content + newContent, quotePosition)
+          Quoted(input, pos + 1, content + newContent)
         } else {
           // Escaped line end, undefined behavior. Let's simply add escape character to the value of the cell
           CellParced(input, pos + 1, content + delimiters.escape)

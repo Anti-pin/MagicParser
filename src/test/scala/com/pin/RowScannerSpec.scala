@@ -167,7 +167,7 @@ class RowScannerSpec extends WordSpec with Matchers {
       val input = """a,, "abc" "def" ,"e,g,h"""
       val (scannedRow, carryOver) = RowScanner.scanRow(Nil, RowScanner.startLine(input))
       scannedRow shouldBe """ "abc" "def" """ :: "" :: "a" :: Nil
-      carryOver shouldBe Some(QuotedIncomplete(input, 17, "\"e,g,h", 17))
+      carryOver shouldBe Some(QuotedIncomplete(input, 17, "\"e,g,h"))
     }
 
     "scan with alternative delimiters" in {
