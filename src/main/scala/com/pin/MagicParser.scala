@@ -6,6 +6,11 @@ object MagicParser {
 
   case class CarryOver(parsed: List[String], quoted: QuotedIncomplete)
 
+  /**
+   * Although this function is recursive (and not tail recursive) it is actually (almost) stack safe as it deals with
+   * lazy streams rather than eager sequences.
+   * 'Almost' because an enormous unclosed quote may, in theory, blow it
+   */
   def parse(input: Stream[String], carryOver: Option[CarryOver] = None)
            (implicit delimiters: Delimiters): Stream[Seq[String]] = {
 
