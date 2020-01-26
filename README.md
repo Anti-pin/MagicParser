@@ -8,7 +8,7 @@ some techniques. Although _checkEvent_ call is referentially transparent FP puri
 I find it acceptable in a test code, although in production I would rather lift the state into _Either_ or _MonadError_ 
  
 ####Scanning
-RegExps are not used deliberately.
+RegExps and Parser Combinators are not used deliberately - too powerful (well, slower too)
 The parser generates a stream of "events" as it scans along the line. In case the line contains opened quotation (and 
 therefore cannot produce a compete row) the scanner would pull another line from the input stream.   
 
