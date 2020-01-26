@@ -173,7 +173,7 @@ class RowScannerSpec extends WordSpec with Matchers {
     "scan with alternative delimiters" in {
       val input = "'ccc:ddd' : 'eee',fff "
       val altDelimiters = new Delimiters {
-        override val quote = '''
+        override val quote = '\''
         override val cellSeparator = ':'
       }
 
