@@ -46,7 +46,6 @@ object MagicParser {
 
     parsedStream match {
       case Empty => Empty
-      case _ #:: Empty => Empty
       case header #:: tail =>
         tail.map {
           row: Seq[String] =>
