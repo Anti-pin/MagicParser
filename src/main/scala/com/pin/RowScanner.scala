@@ -55,17 +55,6 @@ case class CellIncomplete(input: String, position: Int, content: String) extends
   }
 }
 
-case class Escaped(input: String, position: Int, content: String) extends IntermediateParserEvent {
-  override def nextEvent(implicit delimiters: Delimiters): ParserEvent = {
-    if (position < input.length) {
-      val newContent = input(position)
-      CellIncomplete(input, position + 1, content + newContent)
-    } else {
-      // Escaped line end, undefined behavior. Let's simply add escape character to the value of the cell
-      CellParced(input, position + 1, content + delimiters.escape)
-    }
-  }
-}
 
 case class Quoted(input: String, position: Int, content: String) extends IntermediateParserEvent {
   override def nextEvent(implicit delimiters: Delimiters): ParserEvent = {
@@ -86,15 +75,38 @@ case class Quoted(input: String, position: Int, content: String) extends Interme
   }
 }
 
-case class QuotedEscaped(input: String, position: Int, content: String) extends IntermediateParserEvent {
-  override def nextEvent(implicit delimiters: Delimiters): ParserEvent = {
+private object EscapedBase {
+  def handleEscape(input: String,
+                   position: Int,
+                   content: String,
+                   success: String => ParserEvent)(implicit delimiters: Delimiters): ParserEvent = {
     if (position < input.length) {
       val newContent = input(position)
-      Quoted(input, position + 1, content + newContent)
+      success(newContent.toString)
     } else {
       // Escaped line end, undefined behavior. Let's simply add escape character to the value of the cell
       CellParced(input, position + 1, content + delimiters.escape)
     }
+  }
+}
+
+case class Escaped(input: String, position: Int, content: String) extends IntermediateParserEvent {
+  override def nextEvent(implicit delimiters: Delimiters): ParserEvent = {
+    EscapedBase.handleEscape(
+      input,
+      position,
+      content,
+      newContent => CellIncomplete(input, position + 1, content + newContent))
+  }
+}
+
+case class QuotedEscaped(input: String, position: Int, content: String) extends IntermediateParserEvent {
+  override def nextEvent(implicit delimiters: Delimiters): ParserEvent = {
+    EscapedBase.handleEscape(
+      input,
+      position,
+      content,
+      newContent => Quoted(input, position + 1, content + newContent))
   }
 }
 
