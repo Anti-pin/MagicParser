@@ -20,7 +20,7 @@ object MagicParser {
           case Some(CarryOver(cells, event)) =>
             (cells, Quoted(input = head,
               position = 0,
-              content = s"${event.content}\n"))
+              content = s"${event.content}${delimiters.lineSeparator}"))
         }
 
         val (parsedRow, newCarry) = RowScanner.scanRow(initialCells, initialScannerEvent)

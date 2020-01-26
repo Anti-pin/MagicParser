@@ -118,6 +118,7 @@ trait Delimiters {
   val quote = '"'
   val cellSeparator = ','
   val escape = '\\'
+  val lineSeparator = '\n'
 }
 
 object RowScanner {
